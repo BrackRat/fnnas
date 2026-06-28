@@ -458,8 +458,8 @@ jobs:
       - name: Use forked u-boot for Orange Pi 5 Ultra test
         if: ${{ inputs.fnnas_board == 'orangepi-5-ultra' && !cancelled() }}
         env:
-          UBOOT_REPO: ${{ inputs.uboot_repo }}
-          UBOOT_REF: ${{ inputs.uboot_ref }}
+          UBOOT_REPO: ${{ github.event.inputs.uboot_repo }}
+          UBOOT_REF: ${{ github.event.inputs.uboot_ref }}
         run: |
           python3 - <<'PY'
           import os
@@ -473,7 +473,7 @@ jobs:
           )
           text = text.replace(
               'git_pull_dir "${uboot_repo}" main "${git_tmp_path}"',
-              f'git_pull_dir "${{uboot_repo}}" "{os.environ["UBOOT_REF"]}" "${{git_tmp_path}}"',
+              'git_pull_dir "${uboot_repo}" "' + os.environ["UBOOT_REF"] + '" "${git_tmp_path}"',
           )
           path.write_text(text)
           PY
