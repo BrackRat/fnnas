@@ -107,6 +107,7 @@ on:
           - nsy-g16-plus
           - nsy-g68-plus
           - orangepi-3b
+          - orangepi-5-ultra
           - orangepi-5-plus
           - orangepi-5-pro
           - orangepi-5b
@@ -279,6 +280,14 @@ on:
           - ophub
           - angel
           - yourname
+      uboot_repo:
+        description: "Set u-boot repository for test builds"
+        required: false
+        default: "https://github.com/BrackRat/u-boot"
+      uboot_ref:
+        description: "Set u-boot branch for test builds"
+        required: false
+        default: "codex/orangepi-5-ultra"
 
 env:
   TZ: Etc/UTC
@@ -446,9 +455,33 @@ jobs:
           echo "build_tag=${build_tag}" >> ${GITHUB_ENV}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
+      - name: Use forked u-boot for Orange Pi 5 Ultra test
+        if: ${{ inputs.fnnas_board == 'orangepi-5-ultra' && !cancelled() }}
+        env:
+          UBOOT_REPO: ${{ inputs.uboot_repo }}
+          UBOOT_REF: ${{ inputs.uboot_ref }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("renas")
+          text = path.read_text()
+          text = text.replace(
+              'uboot_repo="https://github.com/ophub/u-boot"',
+              f'uboot_repo="{os.environ["UBOOT_REPO"]}"',
+          )
+          text = text.replace(
+              'git_pull_dir "${uboot_repo}" main "${git_tmp_path}"',
+              f'git_pull_dir "${{uboot_repo}}" "{os.environ["UBOOT_REF"]}" "${{git_tmp_path}}"',
+          )
+          path.write_text(text)
+          PY
+          grep -n 'uboot_repo=\|git_pull_dir "${uboot_repo}"' renas
+
       - name: Package FnNAS for target boards
         if: ${{ steps.down.outputs.status == 'success' && !cancelled() }}
-        uses: ophub/fnnas@main
+        uses: ./
         with:
           fnnas_path: fnnas/*.img.xz
           fnnas_board: ${{ inputs.fnnas_board }}
